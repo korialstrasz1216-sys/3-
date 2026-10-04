@@ -1,0 +1,78 @@
+#include "Gau.h"
+#include <math.h>
+
+int gauss_row_solve(int n, double *A, double *b, double *x, int *perm) {
+    const double EPS = 1e-18;
+    int i, j, k, r, piv;
+    double maxv, v, pivot, factor, sum, t;
+    int tp;
+
+    for (i = 0; i < n; ++i) {
+        x[i] = 0.0;
+        perm[i] = i;
+    }
+
+    /* Forward elimination with row pivot */
+    for (i = 0; i < n; ++i) {
+        piv = i;
+        maxv = fabs(A[i * n + i]);
+
+        for (j = i + 1; j < n; ++j) {
+            v = fabs(A[i * n + j]);
+            if (v > maxv) {
+                maxv = v;
+                piv = j;
+            }
+        }
+
+        if (maxv < EPS) {
+            return 1; /* singular matrix */
+        }
+
+        if (piv != i) {
+            for (r = 0; r < n; ++r) {
+                t = A[r * n + i];
+                A[r * n + i] = A[r * n + piv];
+                A[r * n + piv] = t;
+            }
+
+            tp = perm[i];
+            perm[i] = perm[piv];
+            perm[piv] = tp;
+        }
+
+        pivot = A[i * n + i];
+
+        for (k = i + 1; k < n; ++k) {
+            factor = A[k * n + i] / pivot;
+            A[k * n + i] = 0.0;
+
+            for (j = i + 1; j < n; ++j) {
+                A[k * n + j] -= factor * A[i * n + j];
+            }
+
+            b[k] -= factor * b[i];
+        }
+    }
+
+    /* Back substitution */
+    for (i = n - 1; i >= 0; --i) {
+        sum = b[i];
+
+        for (j = i + 1; j < n; ++j) {
+            sum -= A[i * n + j] * x[j];
+        }
+
+        x[i] = sum / A[i * n + i];
+    }
+
+    /* Undo column permutation */
+    for (i = 0; i < n; ++i) {
+        b[i] = x[i];
+    }
+    for (i = 0; i < n; ++i) {
+        x[perm[i]] = b[i];
+    }
+
+    return 0;
+}
